@@ -9,16 +9,18 @@ element        := comment | hook | path
 
 comment        := "/*" <<any text excluding sequence "*/">> "*/"
 
-hook           := ":" ~ index_name [~ ":" ~ key] ~ ":" "=>" node
+hook           := ":" ~ label [~ ":" ~ key] ~ ":" "=>" node
 
 path           := node (forward_path | reverse_path)*
 forward_path   := "-" relationship "->" node
 reverse_path   := "<-" relationship "-" node
 
 node           := named_node | anonymous_node
-named_node     := "(" ~ node_name [_ property_map] ~ ")"
-anonymous_node := "(" ~ [property_map ~] ")"
+named_node     := "(" ~ node_name [_ label_list] [_ property_map] ~ ")"
+anonymous_node := "(" ~ [_ label_list] [property_map ~] ")"
 relationship   := "[" ~ ":" type [_ property_map] ~ "]"
+label_list     := (":" label)+
+label          := name | JSON_STRING
 property_map   := "{" ~ [key_value (~ "," ~ key_value)* ~] "}"
 node_name      := name | JSON_STRING
 name           := (ALPHA | DIGIT | "_")+
