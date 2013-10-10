@@ -46,6 +46,15 @@ public abstract class GeoffParser {
 
     }
 
+    private boolean nextCharEquals(char ch) {
+        if (this.n < this.sourceLength) {
+            return this.source.charAt(this.n) == ch;
+        } else {
+            return false;
+        }
+
+    }
+
     private String peek() {
         return this.peek(1);
     }
@@ -67,15 +76,15 @@ public abstract class GeoffParser {
     private List parseArray() throws GeoffParserException {
         this.parseLiteral('[');
         this.parseWhitespace();
-        if (this.nextChar() == ']') {
+        if (this.nextCharEquals(']')) {
             this.parseLiteral(']');
             return new ArrayList<Object>();
         }
-        if (this.nextChar() == '"') {
+        if (this.nextCharEquals('"')) {
             ArrayList<Object> items = new ArrayList<>();
             items.add(this.parseString());
             this.parseWhitespace();
-            while (this.nextChar().equals(',')) {
+            while (this.nextCharEquals(',')) {
                 this.parseLiteral(',');
                 this.parseWhitespace();
                 items.add(this.parseString());
@@ -83,7 +92,7 @@ public abstract class GeoffParser {
             }
             this.parseLiteral(']');
             return items;
-        } else if ("-0123456789".indexOf(this.nextChar()) >= 0) {
+        } else if (this.nextCharEquals('-') || Character.isDigit(this.nextChar())) {
             ArrayList<Object> integerItems = new ArrayList<>();
             ArrayList<Object> doubleItems = new ArrayList<>();
             Number n = this.parseNumber();
@@ -92,7 +101,7 @@ public abstract class GeoffParser {
                 integerItems.add(n.intValue());
             }
             this.parseWhitespace();
-            while (this.nextChar() == ',') {
+            while (this.nextCharEquals(',')) {
                 this.parseLiteral(',');
                 this.parseWhitespace();
                 n = this.parseNumber();
@@ -108,11 +117,11 @@ public abstract class GeoffParser {
             } else {
                 return doubleItems;
             }
-        } else if ("tf".indexOf(this.nextChar()) >= 0) {
+        } else if (this.nextCharEquals('t') || this.nextCharEquals('f')) {
             ArrayList<Object> items = new ArrayList<>();
             items.add(this.parseBoolean());
             this.parseWhitespace();
-            while (this.nextChar() == ',') {
+            while (this.nextCharEquals(',')) {
                 this.parseLiteral(',');
                 this.parseWhitespace();
                 items.add(this.parseBoolean());
@@ -126,14 +135,13 @@ public abstract class GeoffParser {
     }
 
     private String parseArrow() throws GeoffParserException {
-        char ch = this.nextChar();
-        if (ch == '<') {
+        if (this.nextCharEquals('<')) {
             this.parseLiteral('<');
             this.parseLiteral('-');
             return "<-";
-        } else if (ch == '-') {
+        } else if (this.nextCharEquals('-')) {
             this.parseLiteral('-');
-            if (this.nextChar() == '>') {
+            if (this.nextCharEquals('>')) {
                 this.parseLiteral('>');
                 return "->";
             } else {
@@ -145,23 +153,21 @@ public abstract class GeoffParser {
     }
 
     private boolean parseBoolean() throws GeoffParserException {
-        char ch = this.nextChar();
-        switch (ch) {
-            case 't':
-                parseLiteral('t');
-                parseLiteral('r');
-                parseLiteral('u');
-                parseLiteral('e');
-                return true;
-            case 'f':
-                parseLiteral('f');
-                parseLiteral('a');
-                parseLiteral('l');
-                parseLiteral('s');
-                parseLiteral('e');
-                return false;
-            default:
-                throw new GeoffParserException("Cannot establish truth at position " + Integer.toString(this.n));
+        if (this.nextCharEquals('t')) {
+            parseLiteral('t');
+            parseLiteral('r');
+            parseLiteral('u');
+            parseLiteral('e');
+            return true;
+        } else if (this.nextCharEquals('f')) {
+            parseLiteral('f');
+            parseLiteral('a');
+            parseLiteral('l');
+            parseLiteral('s');
+            parseLiteral('e');
+            return false;
+        } else {
+            throw new GeoffParserException("Cannot establish truth at position " + Integer.toString(this.n));
         }
     }
 
@@ -170,7 +176,7 @@ public abstract class GeoffParser {
         this.parseLiteral('~');
         this.parseLiteral('~');
         this.parseLiteral('~');
-        while (this.nextChar() == '~') {
+        while (this.nextCharEquals('~')) {
             this.parseLiteral('~');
         }
     }
@@ -209,15 +215,12 @@ public abstract class GeoffParser {
                         if ("-".equals(arrow1) && "-".equals(arrow2)) {
                             throw new GeoffParserException("Lack of direction at position " + Integer.toString(this.n));
                         }
-
                         if ("<-".equals(arrow1)) {
                             relationships.add(new LocalRelationship(otherNode, rel.getType(), rel.getProperties(), node));
                         }
-
                         if ("->".equals(arrow2)) {
                             relationships.add(new LocalRelationship(node, rel.getType(), rel.getProperties(), otherNode));
                         }
-
                         node = otherNode;
                     } else {
                         throw new GeoffParserException("Unexpected character '" + nextChar + "' at position " + Integer.toString(this.n));
@@ -258,8 +261,7 @@ public abstract class GeoffParser {
                 this.handleHook(node, label, key);
                 break;
             case '/':
-                String comment = this.parseComment();
-                this.handleComment(comment);
+                this.handleComment(this.parseComment());
                 break;
             case '~':
                 this.parseBoundary();
@@ -282,7 +284,7 @@ public abstract class GeoffParser {
 
     private HashSet<String> parseLabels() throws GeoffParserException {
         HashSet<String> labels = new HashSet<>();
-        while (this.nextChar().equals(':')) {
+        while (this.nextCharEquals(':')) {
             this.parseLiteral(':');
             labels.add(this.parseName());
         }
@@ -299,7 +301,7 @@ public abstract class GeoffParser {
     }
 
     private String parseName() throws GeoffParserException {
-        if (this.nextChar().equals('\"')) {
+        if (this.nextCharEquals('"')) {
             return this.parseString();
         } else {
             int m = this.n;
@@ -316,34 +318,33 @@ public abstract class GeoffParser {
         HashMap<String, Object> properties;
         this.parseLiteral('(');
         this.parseWhitespace();
-        char nextChar = this.nextChar();
-        if (((Character) nextChar).equals(')')) {
+        if (this.nextCharEquals(')')) {
             name = null;
             labels = null;
             properties = null;
-        } else if (((Character) nextChar).equals(':')) {
+        } else if (this.nextCharEquals(':')) {
             name = null;
             labels = this.parseLabels();
             this.parseWhitespace();
-            if (this.nextChar().equals('{')) {
+            if (this.nextCharEquals('{')) {
                 properties = this.parsePropertyMap();
             } else {
                 properties = null;
             }
-        } else if (((Character) nextChar).equals('{')) {
+        } else if (this.nextCharEquals('{')) {
             name = null;
             labels = null;
             properties = this.parsePropertyMap();
         } else {
             name = this.parseName();
             this.parseWhitespace();
-            if (this.nextChar().equals(':')) {
+            if (this.nextCharEquals(':')) {
                 labels = this.parseLabels();
             } else {
                 labels = null;
             }
             this.parseWhitespace();
-            if (this.nextChar().equals('{')) {
+            if (this.nextCharEquals('{')) {
                 properties = this.parsePropertyMap();
             } else {
                 properties = null;
@@ -357,23 +358,23 @@ public abstract class GeoffParser {
     private Number parseNumber() throws GeoffParserException {
         boolean isReal = false;
         int m = this.n;
-        if (this.nextChar() == '-') {
+        if (this.nextCharEquals('-')) {
             this.n += 1;
         }
         while (Character.isDigit(this.nextChar())) {
             this.n += 1;
         }
-        if (this.nextChar() == '.') {
+        if (this.nextCharEquals('.')) {
             isReal = true;
             this.n += 1;
             while (Character.isDigit(this.nextChar())) {
                 this.n += 1;
             }
         }
-        if (this.nextChar() == 'E' || this.nextChar() == 'e') {
+        if (this.nextCharEquals('E') || this.nextCharEquals('e')) {
             isReal = true;
             this.n += 1;
-            if (this.nextChar() == '+' || this.nextChar() == '-') {
+            if (this.nextCharEquals('+') || this.nextCharEquals('-')) {
                 this.n += 1;
             }
             while (Character.isDigit(this.nextChar())) {
@@ -391,7 +392,7 @@ public abstract class GeoffParser {
         HashMap<String, Object> properties = new HashMap<>();
         this.parseLiteral('{');
         this.parseWhitespace();
-        if (!this.nextChar().equals('}')) {
+        if (!this.nextCharEquals('}')) {
             this.parseKeyValuePairInto(properties);
             this.parseWhitespace();
             while (",".equals(this.peek())) {
@@ -409,8 +410,7 @@ public abstract class GeoffParser {
     private LocalRelationship parseRelationshipBox() throws GeoffParserException {
         this.parseLiteral('[');
         this.parseWhitespace();
-        char nextChar = this.nextChar();
-        if (nextChar == ':') {
+        if (this.nextCharEquals(':')) {
             // read and ignore relationship name, if present
             this.parseName();
             this.parseWhitespace();
@@ -418,9 +418,8 @@ public abstract class GeoffParser {
         this.parseLiteral(':');
         String type = this.parseName();
         this.parseWhitespace();
-        nextChar = this.nextChar();
         LocalRelationship rel;
-        if (nextChar == '{') {
+        if (this.nextCharEquals('{')) {
             rel = new LocalRelationship(null, type, this.parsePropertyMap(), null);
             this.parseWhitespace();
         } else {
