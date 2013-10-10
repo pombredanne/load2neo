@@ -5,10 +5,7 @@ import com.nigelsmall.load2neo.LocalRelationship;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Abstract parser class to be extended for specific handlers. Initialise the
@@ -19,13 +16,6 @@ import java.util.regex.Pattern;
 public abstract class GeoffParser {
 
     private static ObjectMapper mapper = new ObjectMapper();
-
-    private static Pattern ARROW        = Pattern.compile("(<-|->|-)");
-    private static Pattern BOUNDARY     = Pattern.compile("(~{4})");
-    private static Pattern JSON_BOOLEAN = Pattern.compile("(true|false)");
-    private static Pattern JSON_NUMBER  = Pattern.compile("(?i)(-?(0|[1-9]\\d*)(\\.\\d+)?(e[+-]?\\d+)?)");
-    private static Pattern JSON_STRING  = Pattern.compile("(\".*?(?<!\\\\)\")");
-    private static Pattern NAME         = Pattern.compile("([\\p{L}\\p{N}_]+)");
 
     private String source;
     private int n;
@@ -75,58 +65,119 @@ public abstract class GeoffParser {
     }
 
     private List parseArray() throws GeoffParserException {
-        ArrayList<Object> items = new ArrayList<>();
-        Pattern valuePattern;
-        Class valueType = null;
-        this.parseLiteral("[");
+        this.parseLiteral('[');
         this.parseWhitespace();
-        String nextChar = this.peek();
-        if (!this.nextChar().equals(']')) {
-            if (this.nextChar().equals('\"')) {
-                valuePattern = JSON_STRING;
-                valueType = String.class;
-            } else if ("-0123456789".contains(nextChar)) {
-                valuePattern = JSON_NUMBER;
-                valueType = Number.class;
-            } else if ("tf".contains(nextChar)) {
-                valuePattern = JSON_BOOLEAN;
-                valueType = Boolean.class;
-            } else {
-                throw new GeoffParserException("Unexpected character '" + nextChar + "' at position " + Integer.toString(this.n));
-            }
-            items.add(this.parsePattern(valuePattern, valueType));
+        if (this.nextChar() == ']') {
+            this.parseLiteral(']');
+            return new ArrayList<Object>();
+        }
+        if (this.nextChar() == '"') {
+            ArrayList<Object> items = new ArrayList<>();
+            items.add(this.parseString());
             this.parseWhitespace();
             while (this.nextChar().equals(',')) {
-                this.parseLiteral(",");
+                this.parseLiteral(',');
                 this.parseWhitespace();
-                items.add(this.parsePattern(valuePattern, valueType));
+                items.add(this.parseString());
                 this.parseWhitespace();
             }
-        }
-        this.parseLiteral("]");
-        if (valueType == Number.class) {
-            int itemCount = items.size();
-            ArrayList<Integer> integerItems = new ArrayList<>(itemCount);
-            ArrayList<Float> floatItems = new ArrayList<>(itemCount);
-            for (Object item : items) {
-                Number n = (Number)item;
-                floatItems.add(n.floatValue());
+            this.parseLiteral(']');
+            return items;
+        } else if ("-0123456789".indexOf(this.nextChar()) >= 0) {
+            ArrayList<Object> integerItems = new ArrayList<>();
+            ArrayList<Object> doubleItems = new ArrayList<>();
+            Number n = this.parseNumber();
+            doubleItems.add(n.doubleValue());
+            if (n instanceof Integer) {
+                integerItems.add(n.intValue());
+            }
+            this.parseWhitespace();
+            while (this.nextChar() == ',') {
+                this.parseLiteral(',');
+                this.parseWhitespace();
+                n = this.parseNumber();
+                doubleItems.add(n.doubleValue());
                 if (n instanceof Integer) {
                     integerItems.add(n.intValue());
                 }
+                this.parseWhitespace();
             }
-            if (integerItems.size() == itemCount) {
+            this.parseLiteral(']');
+            if (integerItems.size() == doubleItems.size()) {
                 return integerItems;
             } else {
-                return floatItems;
+                return doubleItems;
             }
+        } else if ("tf".indexOf(this.nextChar()) >= 0) {
+            ArrayList<Object> items = new ArrayList<>();
+            items.add(this.parseBoolean());
+            this.parseWhitespace();
+            while (this.nextChar() == ',') {
+                this.parseLiteral(',');
+                this.parseWhitespace();
+                items.add(this.parseBoolean());
+                this.parseWhitespace();
+            }
+            this.parseLiteral(']');
+            return items;
+        } else {
+            throw new GeoffParserException("Disarray at position " + Integer.toString(this.n));
         }
-        return items;
+    }
+
+    private String parseArrow() throws GeoffParserException {
+        char ch = this.nextChar();
+        if (ch == '<') {
+            this.parseLiteral('<');
+            this.parseLiteral('-');
+            return "<-";
+        } else if (ch == '-') {
+            this.parseLiteral('-');
+            if (this.nextChar() == '>') {
+                this.parseLiteral('>');
+                return "->";
+            } else {
+                return "-";
+            }
+        } else {
+            throw new GeoffParserException("Broken arrow at position " + Integer.toString(this.n));
+        }
+    }
+
+    private boolean parseBoolean() throws GeoffParserException {
+        char ch = this.nextChar();
+        switch (ch) {
+            case 't':
+                parseLiteral('t');
+                parseLiteral('r');
+                parseLiteral('u');
+                parseLiteral('e');
+                return true;
+            case 'f':
+                parseLiteral('f');
+                parseLiteral('a');
+                parseLiteral('l');
+                parseLiteral('s');
+                parseLiteral('e');
+                return false;
+            default:
+                throw new GeoffParserException("Cannot establish truth at position " + Integer.toString(this.n));
+        }
+    }
+
+    private void parseBoundary() throws GeoffParserException {
+        this.parseLiteral('~');
+        this.parseLiteral('~');
+        this.parseLiteral('~');
+        this.parseLiteral('~');
+        while (this.nextChar() == '~') {
+            this.parseLiteral('~');
+        }
     }
 
     private String parseComment() throws GeoffParserException {
-        this.parseLiteral("/");
-        this.parseLiteral("*");
+        this.parseLiteral('/');
+        this.parseLiteral('*');
         int m = this.n;
         int endOfComment = this.source.indexOf("*/", this.n);
         if (endOfComment >= 0) {
@@ -151,12 +202,12 @@ public abstract class GeoffParser {
                 while (this.n < this.sourceLength && "<-".indexOf((int) this.nextChar()) >= 0) {
                     String nextChar = this.peek();
                     if ("<-".contains(nextChar)) {
-                        String arrow1 = this.parsePattern(ARROW).toString();
+                        String arrow1 = this.parseArrow();
                         LocalRelationship rel = this.parseRelationshipBox();
-                        String arrow2 = this.parsePattern(ARROW).toString();
+                        String arrow2 = this.parseArrow();
                         LocalNode otherNode = this.parseNode();
                         if ("-".equals(arrow1) && "-".equals(arrow2)) {
-                            throw new GeoffParserException("No relationship direction specified");
+                            throw new GeoffParserException("Lack of direction at position " + Integer.toString(this.n));
                         }
 
                         if ("<-".equals(arrow1)) {
@@ -188,20 +239,21 @@ public abstract class GeoffParser {
                 }
                 break;
             case ':':
-                this.parseLiteral(":");
+                this.parseLiteral(':');
                 this.parseWhitespace();
                 String label = this.parseName();
                 this.parseWhitespace();
-                this.parseLiteral(":");
+                this.parseLiteral(':');
                 this.parseWhitespace();
                 String key = null;
                 if (!"=>".equals(this.peek(2))) {
                     key = this.parseName();
                     this.parseWhitespace();
-                    this.parseLiteral(":");
+                    this.parseLiteral(':');
                     this.parseWhitespace();
                 }
-                this.parseLiteral("=>");
+                this.parseLiteral('=');
+                this.parseLiteral('>');
                 node = this.parseNode();
                 this.handleHook(node, label, key);
                 break;
@@ -210,7 +262,7 @@ public abstract class GeoffParser {
                 this.handleComment(comment);
                 break;
             case '~':
-                this.parsePattern(BOUNDARY);
+                this.parseBoundary();
                 this.handleBoundary();
                 break;
             default:
@@ -228,6 +280,15 @@ public abstract class GeoffParser {
         map.put(key, value);
     }
 
+    private HashSet<String> parseLabels() throws GeoffParserException {
+        HashSet<String> labels = new HashSet<>();
+        while (this.nextChar().equals(':')) {
+            this.parseLiteral(':');
+            labels.add(this.parseName());
+        }
+        return labels;
+    }
+
     private char parseLiteral(char ch) throws GeoffParserException {
         if (this.source.charAt(this.n) == ch) {
             this.n += 1;
@@ -235,28 +296,17 @@ public abstract class GeoffParser {
         } else {
             throw new GeoffParserException("Unexpected character '" + Character.toString(ch) + "' at position " + Integer.toString(this.n));
         }
-
-    }
-
-    private String parseLiteral(String literal) throws GeoffParserException {
-        int length = literal.length();
-        for (int i = 0; i < length; i++) {
-            char ch = this.source.charAt(this.n + i);
-            if (literal.charAt(i) != this.source.charAt(this.n + i)) {
-                throw new GeoffParserException("Unexpected character '" + Character.toString(ch) + "' at position " + Integer.toString(this.n));
-            }
-
-        }
-
-        this.n += length;
-        return literal;
     }
 
     private String parseName() throws GeoffParserException {
         if (this.nextChar().equals('\"')) {
-            return this.parsePattern(JSON_STRING, String.class).toString();
+            return this.parseString();
         } else {
-            return this.parsePattern(NAME).toString();
+            int m = this.n;
+            while (n < this.sourceLength && Character.isLetterOrDigit(this.source.charAt(this.n)) || this.source.charAt(this.n) == '_') {
+                this.n += 1;
+            }
+            return this.source.substring(m, this.n);
         }
     }
 
@@ -300,41 +350,40 @@ public abstract class GeoffParser {
             }
         }
         this.parseWhitespace();
-        this.parseLiteral(")");
+        this.parseLiteral(')');
         return new LocalNode(name, labels, properties);
     }
 
-    private HashSet<String> parseLabels() throws GeoffParserException {
-        HashSet<String> labels = new HashSet<>();
-        while (this.nextChar().equals(':')) {
-            this.parseLiteral(':');
-            labels.add(this.parseName());
+    private Number parseNumber() throws GeoffParserException {
+        boolean isReal = false;
+        int m = this.n;
+        if (this.nextChar() == '-') {
+            this.n += 1;
         }
-        return labels;
-    }
-
-    private Object parsePattern(Pattern pattern) throws GeoffParserException {
-        return this.parsePattern(pattern, null);
-    }
-
-    private Object parsePattern(Pattern pattern, Class decodeToClass) throws GeoffParserException {
-        Matcher matcher = pattern.matcher(this.source);
-        boolean found = matcher.find(this.n);
-        String value;
-        if (found && matcher.start() == this.n) {
-            value = matcher.group(0);
-            this.n += value.length();
-        } else {
-            throw new GeoffParserException("Pattern not found at position " + Integer.toString(this.n));
+        while (Character.isDigit(this.nextChar())) {
+            this.n += 1;
         }
-        if (decodeToClass != null) {
-            try {
-                return mapper.readValue(value, decodeToClass);
-            } catch (IOException e) {
-                throw new GeoffParserException("Unable to parse JSON value at position " + Integer.toString(this.n));
+        if (this.nextChar() == '.') {
+            isReal = true;
+            this.n += 1;
+            while (Character.isDigit(this.nextChar())) {
+                this.n += 1;
             }
+        }
+        if (this.nextChar() == 'E' || this.nextChar() == 'e') {
+            isReal = true;
+            this.n += 1;
+            if (this.nextChar() == '+' || this.nextChar() == '-') {
+                this.n += 1;
+            }
+            while (Character.isDigit(this.nextChar())) {
+                this.n += 1;
+            }
+        }
+        if (isReal) {
+            return Double.parseDouble(this.source.substring(m, this.n));
         } else {
-            return value;
+            return Integer.parseInt(this.source.substring(m, this.n));
         }
     }
 
@@ -353,7 +402,6 @@ public abstract class GeoffParser {
             }
 
         }
-
         this.parseLiteral('}');
         return properties;
     }
@@ -361,27 +409,47 @@ public abstract class GeoffParser {
     private LocalRelationship parseRelationshipBox() throws GeoffParserException {
         this.parseLiteral('[');
         this.parseWhitespace();
-        String nextChar = this.peek();
-        if (!":".equals(nextChar)) {
+        char nextChar = this.nextChar();
+        if (nextChar == ':') {
             // read and ignore relationship name, if present
             this.parseName();
             this.parseWhitespace();
         }
-
-        this.parseLiteral(":");
+        this.parseLiteral(':');
         String type = this.parseName();
         this.parseWhitespace();
-        nextChar = this.peek();
+        nextChar = this.nextChar();
         LocalRelationship rel;
-        if ("{".equals(nextChar)) {
+        if (nextChar == '{') {
             rel = new LocalRelationship(null, type, this.parsePropertyMap(), null);
             this.parseWhitespace();
         } else {
             rel = new LocalRelationship(null, type, null, null);
         }
-
-        this.parseLiteral("]");
+        this.parseLiteral(']');
         return rel;
+    }
+
+    /** Consumes a string in JSON format
+     */
+    private String parseString() throws GeoffParserException {
+        int m = this.n;
+        this.parseLiteral('"');
+        boolean endOfString = false;
+        while (!endOfString) {
+            while (n < this.sourceLength && this.source.charAt(this.n) != '"') {
+                this.n += 1;
+            }
+            if (this.source.charAt(this.n - 1) != '\\') {
+                endOfString = true;
+            }
+            this.parseLiteral('"');
+        }
+        try {
+            return mapper.readValue(this.source.substring(m, this.n), String.class);
+        } catch (IOException e) {
+            throw new GeoffParserException("Unable to parse JSON string at position " + Integer.toString(m));
+        }
     }
 
     private Object parseValue() throws GeoffParserException {
@@ -396,30 +464,29 @@ public abstract class GeoffParser {
                 value = listValue.toArray(new String[listValueSize]);
             } else if (listValue.get(0) instanceof Integer) {
                 value = listValue.toArray(new Integer[listValueSize]);
-            } else if (listValue.get(0) instanceof Float) {
-                value = listValue.toArray(new Float[listValueSize]);
+            } else if (listValue.get(0) instanceof Double) {
+                value = listValue.toArray(new Double[listValueSize]);
             } else if (listValue.get(0) instanceof Boolean) {
                 value = listValue.toArray(new Boolean[listValueSize]);
             } else {
                 throw new GeoffParserException("Unexpected array type");
             }
         } else if ("\"".equals(nextChar)) {
-            value = this.parsePattern(JSON_STRING, String.class);
+            value = this.parseString();
         } else if ("-0123456789".contains(nextChar)) {
-            value = this.parsePattern(JSON_NUMBER, Number.class);
-        } else if ("t".equals(nextChar)) {
-            this.parseLiteral("true");
-            value = true;
-        } else if ("f".equals(nextChar)) {
-            this.parseLiteral("false");
-            value = false;
+            //value = this.parsePattern(JSON_NUMBER, Number.class);
+            value = this.parseNumber();
+        } else if ("t".equals(nextChar) || "f".equals(nextChar)) {
+            value = this.parseBoolean();
         } else if ("n".equals(nextChar)) {
-            this.parseLiteral("null");
+            this.parseLiteral('n');
+            this.parseLiteral('u');
+            this.parseLiteral('l');
+            this.parseLiteral('l');
             value = null;
         } else {
             throw new GeoffParserException("Unexpected character '" + nextChar + "' at position " + Integer.toString(this.n));
         }
-
         return value;
     }
 
