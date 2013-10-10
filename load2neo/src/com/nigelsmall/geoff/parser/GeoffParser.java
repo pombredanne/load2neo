@@ -5,6 +5,7 @@ import com.nigelsmall.load2neo.LocalRelationship;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,12 +76,12 @@ public abstract class GeoffParser {
 
     private List parseArray() throws GeoffParserException {
         ArrayList<Object> items = new ArrayList<>();
+        Pattern valuePattern;
+        Class valueType = null;
         this.parseLiteral("[");
         this.parseWhitespace();
         String nextChar = this.peek();
         if (!this.nextChar().equals(']')) {
-            Pattern valuePattern;
-            Class valueType;
             if (this.nextChar().equals('\"')) {
                 valuePattern = JSON_STRING;
                 valueType = String.class;
@@ -103,6 +104,23 @@ public abstract class GeoffParser {
             }
         }
         this.parseLiteral("]");
+        if (valueType == Number.class) {
+            int itemCount = items.size();
+            ArrayList<Integer> integerItems = new ArrayList<>(itemCount);
+            ArrayList<Float> floatItems = new ArrayList<>(itemCount);
+            for (Object item : items) {
+                Number n = (Number)item;
+                floatItems.add(n.floatValue());
+                if (n instanceof Integer) {
+                    integerItems.add(n.intValue());
+                }
+            }
+            if (integerItems.size() == itemCount) {
+                return integerItems;
+            } else {
+                return floatItems;
+            }
+        }
         return items;
     }
 
@@ -370,7 +388,21 @@ public abstract class GeoffParser {
         String nextChar = this.peek();
         Object value;
         if ("[".equals(nextChar)) {
-            value = this.parseArray();
+            List listValue = this.parseArray();
+            int listValueSize = listValue.size();
+            if (listValueSize == 0) {
+                value = new Object[0];
+            } else if (listValue.get(0) instanceof String) {
+                value = listValue.toArray(new String[listValueSize]);
+            } else if (listValue.get(0) instanceof Integer) {
+                value = listValue.toArray(new Integer[listValueSize]);
+            } else if (listValue.get(0) instanceof Float) {
+                value = listValue.toArray(new Float[listValueSize]);
+            } else if (listValue.get(0) instanceof Boolean) {
+                value = listValue.toArray(new Boolean[listValueSize]);
+            } else {
+                throw new GeoffParserException("Unexpected array type");
+            }
         } else if ("\"".equals(nextChar)) {
             value = this.parsePattern(JSON_STRING, String.class);
         } else if ("-0123456789".contains(nextChar)) {

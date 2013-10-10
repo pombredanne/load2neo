@@ -31,16 +31,21 @@ public class Loader {
         Response.Status statusCode;
         StringBuilder content = new StringBuilder();
         try (Transaction tx = database.beginTx()) {
+            int subgraphNumber = 0;
             for (Subgraph subgraph : GeoffDocument.parse(text)) {
                 Map<String, Node> nodes = subgraph.loadInto(database);
                 for (Map.Entry<String, Node> entry : nodes.entrySet()) {
+                    Node node = entry.getValue();
+                    content.append(subgraphNumber);
+                    content.append('\t');
                     content.append('"');
                     content.append(entry.getKey());
                     content.append('"');
                     content.append('\t');
-                    content.append(entry.getValue().getId());
+                    content.append(node.getId());
                     content.append('\n');
                 }
+                subgraphNumber += 1;
             }
             tx.success();
             statusCode = Response.Status.OK;

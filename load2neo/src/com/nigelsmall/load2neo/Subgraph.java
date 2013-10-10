@@ -47,6 +47,7 @@ public class Subgraph {
 
     public Map<String, Node> loadInto(GraphDatabaseService database) {
         HashMap<String, Node> nodes = new HashMap<>();
+        HashMap<String, Node> namedNodes = new HashMap<>();
         for (LocalNode localNode : this.nodes.values()) {
             Node node = null;
             String hookLabel = localNode.getHookLabel();
@@ -79,6 +80,9 @@ public class Subgraph {
                 }
             }
             nodes.put(localNode.getName(), node);
+            if (localNode.isNamed()) {
+                namedNodes.put(localNode.getName(), node);
+            }
         }
         for (LocalRelationship localRelationship : this.relationships) {
             Node startNode = nodes.get(localRelationship.getStartNode().getName());
@@ -91,7 +95,7 @@ public class Subgraph {
                 }
             }
         }
-        return nodes;
+        return namedNodes;
     }
 
 }

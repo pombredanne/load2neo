@@ -11,6 +11,7 @@ public class LocalNode {
     private static ObjectMapper mapper = new ObjectMapper();
 
     private String name;
+    private boolean named;
     private HashSet<String> labels;
     private HashMap<String, Object> properties;
     private String hookLabel;
@@ -19,8 +20,10 @@ public class LocalNode {
     public LocalNode(String name, Set<String> labels, Map<String, Object> properties) {
         if (name == null) {
             this.name = UUID.randomUUID().toString();
+            this.named = false;
         } else {
             this.name = name;
+            this.named = true;
         }
         this.mergeLabels(labels);
         this.mergeProperties(properties);
@@ -59,6 +62,10 @@ public class LocalNode {
 
     public String getName() {
         return this.name;
+    }
+
+    public boolean isNamed() {
+        return this.named;
     }
 
     public Set<String> getLabels() {
