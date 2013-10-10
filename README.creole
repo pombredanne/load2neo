@@ -26,6 +26,44 @@ be recognisable to anyone familiar with Cypher, on which its syntax is based. A
 Geoff document is composed of one or more subgraphs, separated by the {{{~~~~}}}
 sequence.
 
+Each subgraph consists of one or more paths, for example:
+
+{{{
+(alice {"name":"Alice"})
+(bob {"name":"Bob"})
+(carol {"name":"Carol"})
+(dave {"name":"Dave"})
+(alice)<-[:KNOWS]->(bob)<-[:KNOWS]->(carol)<-[:KNOWS]->(dave)<-[:KNOWS]->(alice)
+}}}
+
+Properties are represented in JSON format and may be provided in single nodes,
+in longer paths or in both:
+
+{{{
+(alice {"name":"Alice"})
+(bob {"name":"Bob"})
+(alice {"age":33})<-[:KNOWS]->(bob {"age":44})
+}}}
+
+Labels are also supported and one or more may be added to each node:
+
+{{{
+(alice:Person {"name":"Alice"})<-[:KNOWS]->(bob:Person {"name":"Bob"})
+}}}
+
+When loaded, a Geoff subgraph will generally create new nodes and relationships
+for all those represented. To use an existing node instead, a hook can be used
+to bind a node to one with the same label, key and value. If more than one is
+found, the one chosen is non-deterministic.
+
+{{{
+:Person:name:=>(alice:Person {"name":"Alice"})
+(alice)-[:KNOWS]->(bob:Person {"name":"Bob"})
+(alice)-[:KNOWS]->(carol:Person {"name":"Carol"})
+(alice)-[:KNOWS]->(dave:Person {"name":"Dave"})
+}}}
+
+
 === Loading
 
 {{{
