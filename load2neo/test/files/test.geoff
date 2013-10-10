@@ -30,6 +30,11 @@
 
 ~~~~
 
+/* multi
+ * line
+ * comment
+ */
+
 :Person:name:=>(alice {"name":"Alice"})
 :Person:name:=>(bob {"name":"Bob"})
 :Person:name:=>(carol {"name":"Carol"})
