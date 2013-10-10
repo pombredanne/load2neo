@@ -1,0 +1,60 @@
+= Load2neo
+
+== Installation
+
+To install, drop the ``load2neo.jar`` file into the server //plugins//
+directory and edit the conf/neo4j-server.properties file to ensure the
+extension is mounted:
+
+{{{
+org.neo4j.server.thirdparty_jaxrs_classes=com.nigelsmall.load2neo=/load2neo
+}}}
+
+You will need to restart the server for the configuration and extension to be
+loaded.
+
+== Geoff
+
+=== Loading
+
+{{{
+curl -X POST http://localhost:7474/load2neo/load/geoff -d @foo.geoff
+}}}
+
+=== Geoff Syntax Specification
+
+document       := subgraph (_ boundary _ subgraph)*
+boundary       := "~~~~"
+
+subgraph       := [element (_ element)*]
+element        := comment | hook | path
+
+comment        := "/*" <<any text excluding sequence "*/">> "*/"
+
+hook           := ":" ~ label [~ ":" ~ key] ~ ":" "=>" node
+
+path           := node (forward_path | reverse_path)*
+forward_path   := "-" relationship "->" node
+reverse_path   := "<-" relationship "-" node
+
+node           := named_node | anonymous_node
+named_node     := "(" ~ node_name [_ label_list] [_ property_map] ~ ")"
+anonymous_node := "(" ~ [label_list] [_ property_map] ~ ")"
+relationship   := "[" ~ ":" type [_ property_map] ~ "]"
+label_list     := (":" label)+
+label          := name | JSON_STRING
+property_map   := "{" ~ [key_value (~ "," ~ key_value)* ~] "}"
+node_name      := name | JSON_STRING
+name           := (ALPHA | DIGIT | "_")+
+type           := name | JSON_STRING
+key_value      := key ~ ":" ~ value
+key            := name | JSON_STRING
+value          := array | JSON_STRING | JSON_NUMBER | JSON_BOOLEAN | JSON_NULL
+
+array          := empty_array | string_array | numeric_array | boolean_array
+empty_array    := "[" ~ "]"
+string_array   := "[" ~ JSON_STRING (~ "," ~ JSON_STRING)* ~ "]"
+numeric_array  := "[" ~ JSON_NUMBER (~ "," ~ JSON_NUMBER)* ~ "]"
+boolean_array  := "[" ~ JSON_BOOLEAN (~ "," ~ JSON_BOOLEAN)* ~ "]"
+
+* Mandatory whitespace is represented by "_" and optional whitespace by "~"
