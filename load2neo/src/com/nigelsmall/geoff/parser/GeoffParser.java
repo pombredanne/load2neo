@@ -47,23 +47,7 @@ public abstract class GeoffParser {
     }
 
     private boolean nextCharEquals(char ch) {
-        if (this.n < this.sourceLength) {
-            return this.source.charAt(this.n) == ch;
-        } else {
-            return false;
-        }
-
-    }
-
-    private String peek() {
-        return this.peek(1);
-    }
-
-    private String peek(int length) {
-        int last = this.sourceLength;
-        int start = Math.min(this.n, last);
-        int end = Math.min(this.n + length, last);
-        return this.source.substring(start, end);
+        return this.n < this.sourceLength && this.source.charAt(this.n) == ch;
     }
 
     public void parse() throws GeoffParserException {
@@ -206,8 +190,7 @@ public abstract class GeoffParser {
                 LocalNode node = this.parseNode();
                 ArrayList<LocalRelationship> relationships = new ArrayList<>();
                 while (this.n < this.sourceLength && "<-".indexOf((int) this.nextChar()) >= 0) {
-                    String nextChar = this.peek();
-                    if ("<-".contains(nextChar)) {
+                    if (this.nextCharEquals('<') || this.nextCharEquals('-')) {
                         String arrow1 = this.parseArrow();
                         LocalRelationship rel = this.parseRelationshipBox();
                         String arrow2 = this.parseArrow();
@@ -223,12 +206,12 @@ public abstract class GeoffParser {
                         }
                         node = otherNode;
                     } else {
-                        throw new GeoffParserException("Unexpected character '" + nextChar + "' at position " + Integer.toString(this.n));
+                        throw new GeoffParserException("Unexpected character  at position " + Integer.toString(this.n));
                     }
                 }
                 this.parseWhitespace();
                 Map<String, Object> properties = null;
-                if ("{".equals(this.peek())) {
+                if (this.nextCharEquals('{')) {
                     properties = this.parsePropertyMap();
                 }
                 if (relationships.size() > 0) {
@@ -249,7 +232,7 @@ public abstract class GeoffParser {
                 this.parseLiteral(':');
                 this.parseWhitespace();
                 String key = null;
-                if (!"=>".equals(this.peek(2))) {
+                if (!this.nextCharEquals('=')) {
                     key = this.parseName();
                     this.parseWhitespace();
                     this.parseLiteral(':');
@@ -268,7 +251,7 @@ public abstract class GeoffParser {
                 this.handleBoundary();
                 break;
             default:
-                throw new GeoffParserException("Unexpected character '" + this.peek() + "' at position " + Integer.toString(this.n));
+                throw new GeoffParserException("Unexpected character at position " + Integer.toString(this.n));
         }
         return true;
     }
@@ -395,7 +378,7 @@ public abstract class GeoffParser {
         if (!this.nextCharEquals('}')) {
             this.parseKeyValuePairInto(properties);
             this.parseWhitespace();
-            while (",".equals(this.peek())) {
+            while (this.nextCharEquals(',')) {
                 this.parseLiteral(',');
                 this.parseWhitespace();
                 this.parseKeyValuePairInto(properties);
@@ -452,9 +435,8 @@ public abstract class GeoffParser {
     }
 
     private Object parseValue() throws GeoffParserException {
-        String nextChar = this.peek();
         Object value;
-        if ("[".equals(nextChar)) {
+        if (this.nextCharEquals('[')) {
             List listValue = this.parseArray();
             int listValueSize = listValue.size();
             if (listValueSize == 0) {
@@ -470,21 +452,20 @@ public abstract class GeoffParser {
             } else {
                 throw new GeoffParserException("Unexpected array type");
             }
-        } else if ("\"".equals(nextChar)) {
+        } else if (this.nextCharEquals('"')) {
             value = this.parseString();
-        } else if ("-0123456789".contains(nextChar)) {
-            //value = this.parsePattern(JSON_NUMBER, Number.class);
+        } else if (this.nextCharEquals('-') || Character.isDigit(this.nextChar())) {
             value = this.parseNumber();
-        } else if ("t".equals(nextChar) || "f".equals(nextChar)) {
+        } else if (this.nextCharEquals('t') || this.nextCharEquals('f')) {
             value = this.parseBoolean();
-        } else if ("n".equals(nextChar)) {
+        } else if (this.nextCharEquals('n')) {
             this.parseLiteral('n');
             this.parseLiteral('u');
             this.parseLiteral('l');
             this.parseLiteral('l');
             value = null;
         } else {
-            throw new GeoffParserException("Unexpected character '" + nextChar + "' at position " + Integer.toString(this.n));
+            throw new GeoffParserException("Unexpected character at position " + Integer.toString(this.n));
         }
         return value;
     }
