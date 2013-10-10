@@ -1,0 +1,48 @@
+/* node combinations */
+
+()
+({"foo":"bar"})
+({"foo":"bar","baz":"qux"})
+(:Foo)
+(:Foo {"foo":"bar"})
+(:Foo {"foo":"bar","baz":"qux"})
+(:Foo:Bar)
+(:Foo:Bar {"foo":"bar"})
+(:Foo:Bar {"foo":"bar","baz":"qux"})
+(a)
+(b {"foo":"bar"})
+(c {"foo":"bar","baz":"qux"})
+(d:Foo)
+(e:Foo {"foo":"bar"})
+(f:Foo {"foo":"bar","baz":"qux"})
+(g:Foo:Bar)
+(h:Foo:Bar {"foo":"bar"})
+(i:Foo:Bar {"foo":"bar","baz":"qux"})
+
+~~~~
+/* property types */
+
+(a {"text": "Lorem ipsum dolor sit amet...", "rainbow": ["red","orange","yellow","green","blue","indigo","violet"]})
+(b {"integer": 42, "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144]})
+(c {"truth": true})
+(d {"falsehood": false})
+(e {"nothing": null})
+(f {"real": 3.141592653589})
+
+~~~~
+
+:Person:name:=>(alice {"name":"Alice"})
+:Person:name:=>(bob {"name":"Bob"})
+:Person:name:=>(carol {"name":"Carol"})
+
+(alice)<-[:KNOWS]->(bob)<-[:KNOWS]->(carol)<-[:KNOWS]->(alice)
+
+~~~~
+
+(b:Person {"name": "Bob"})
+(a)-[:KNOWS]->(b)
+(c:Person) {"name": "Carol", "favourite colours": ["red", "purple"]}
+(a)<-[:LIKES]-(b)-[:HATES]->(c)
+(c)-[:WORKS_WITH {"since":1999}]->(a)
+
+(c)-[:KNOWS]->(d {"name":"Dave", "age": 104}) {"foo":"bar","answer":42}
