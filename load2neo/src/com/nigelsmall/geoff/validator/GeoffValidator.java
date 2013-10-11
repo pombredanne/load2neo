@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
-public class Validator {
+public class GeoffValidator {
 
     public static void validate(InputStream stream) throws IOException, GeoffParserException {
         int i = 0;
