@@ -52,10 +52,10 @@ public class Loader {
             @Override
             public void write(OutputStream os) throws IOException {
                 Writer writer = new BufferedWriter(new OutputStreamWriter(os));
-                try (Transaction tx = database.beginTx()) {
-                    int subgraphNumber = 0;
-                    while (geoffReader.hasMore()) {
-                        Subgraph subgraph = geoffReader.readSubgraph();
+                int subgraphNumber = 0;
+                while (geoffReader.hasMore()) {
+                    Subgraph subgraph = geoffReader.readSubgraph();
+                    try (Transaction tx = database.beginTx()) {
                         Map<String, Node> nodes = subgraph.loadInto(database);
                         for (Map.Entry<String, Node> entry : nodes.entrySet()) {
                             Node node = entry.getValue();
@@ -69,9 +69,9 @@ public class Loader {
                             writer.write('\n');
                         }
                         writer.flush();
-                        subgraphNumber += 1;
+                        tx.success();
                     }
-                    tx.success();
+                    subgraphNumber += 1;
                 }
             }
 
