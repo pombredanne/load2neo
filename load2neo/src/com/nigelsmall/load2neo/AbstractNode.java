@@ -22,7 +22,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import java.io.IOException;
 import java.util.*;
 
-public class LocalNode {
+public class AbstractNode {
 
     private static ObjectMapper mapper = new ObjectMapper();
 
@@ -33,7 +33,7 @@ public class LocalNode {
     private String hookLabel;
     private String hookKey;
 
-    public LocalNode(String name, Set<String> labels, Map<String, Object> properties) {
+    public AbstractNode(String name, Set<String> labels, Map<String, Object> properties) {
         if (name == null) {
             this.name = UUID.randomUUID().toString();
             this.named = false;
@@ -92,7 +92,7 @@ public class LocalNode {
         return this.properties;
     }
 
-    public void mergeNode(LocalNode node) {
+    public void mergeNode(AbstractNode node) {
         if (node.name != null) {
             this.name = node.name;
         }

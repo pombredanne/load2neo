@@ -16,8 +16,8 @@
 
 package com.nigelsmall.geoff.reader;
 
-import com.nigelsmall.load2neo.LocalNode;
-import com.nigelsmall.load2neo.LocalRelationship;
+import com.nigelsmall.load2neo.AbstractNode;
+import com.nigelsmall.load2neo.AbstractRelationship;
 import com.nigelsmall.load2neo.Subgraph;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -249,7 +249,7 @@ public class GeoffReader {
         }
     }
 
-    private LocalNode readNode() throws IOException {
+    private AbstractNode readNode() throws IOException {
         String name;
         HashSet<String> labels;
         HashMap<String, Object> properties;
@@ -289,7 +289,7 @@ public class GeoffReader {
         }
         this.readWhitespace();
         this.readChar(')');
-        return new LocalNode(name, labels, properties);
+        return new AbstractNode(name, labels, properties);
     }
 
     private Number readNumber() throws IOException {
@@ -344,7 +344,7 @@ public class GeoffReader {
         return properties;
     }
 
-    private LocalRelationship readRelationshipBox() throws IOException {
+    private AbstractRelationship readRelationshipBox() throws IOException {
         this.readChar('[');
         this.readWhitespace();
         if (this.nextCharEquals(':')) {
@@ -355,12 +355,12 @@ public class GeoffReader {
         this.readChar(':');
         String type = this.readName();
         this.readWhitespace();
-        LocalRelationship rel;
+        AbstractRelationship rel;
         if (this.nextCharEquals('{')) {
-            rel = new LocalRelationship(null, type, this.readPropertyMap(), null);
+            rel = new AbstractRelationship(null, type, this.readPropertyMap(), null);
             this.readWhitespace();
         } else {
-            rel = new LocalRelationship(null, type, null, null);
+            rel = new AbstractRelationship(null, type, null, null);
         }
         this.readChar(']');
         return rel;
@@ -433,21 +433,21 @@ public class GeoffReader {
         this.readWhitespace();
         while (this.hasMore() && !endOfSubgraph) {
             if(this.nextCharEquals('(')) {
-                LocalNode node = this.readNode();
-                ArrayList<LocalRelationship> relationships = new ArrayList<>();
+                AbstractNode node = this.readNode();
+                ArrayList<AbstractRelationship> relationships = new ArrayList<>();
                 while (this.nextCharEquals('<') || this.nextCharEquals('-')) {
                     String arrow1 = this.readArrow();
-                    LocalRelationship rel = this.readRelationshipBox();
+                    AbstractRelationship rel = this.readRelationshipBox();
                     String arrow2 = this.readArrow();
-                    LocalNode otherNode = this.readNode();
+                    AbstractNode otherNode = this.readNode();
                     if ("-".equals(arrow1) && "-".equals(arrow2)) {
                         throw new GeoffReaderException("Lack of direction");
                     }
                     if ("<-".equals(arrow1)) {
-                        relationships.add(new LocalRelationship(otherNode, rel.getType(), rel.getProperties(), node));
+                        relationships.add(new AbstractRelationship(otherNode, rel.getType(), rel.getProperties(), node));
                     }
                     if ("->".equals(arrow2)) {
-                        relationships.add(new LocalRelationship(node, rel.getType(), rel.getProperties(), otherNode));
+                        relationships.add(new AbstractRelationship(node, rel.getType(), rel.getProperties(), otherNode));
                     }
                     node = otherNode;
                 }
@@ -457,7 +457,7 @@ public class GeoffReader {
                     properties = this.readPropertyMap();
                 }
                 if (relationships.size() > 0) {
-                    for (LocalRelationship rel : relationships) {
+                    for (AbstractRelationship rel : relationships) {
                         rel.mergeProperties(properties);
                         subgraph.addRelationship(rel);
                     }
@@ -481,7 +481,7 @@ public class GeoffReader {
                 }
                 this.readChar('=');
                 this.readChar('>');
-                LocalNode node = this.readNode();
+                AbstractNode node = this.readNode();
                 subgraph.mergeNode(node).setHook(label, key);
             } else  if(this.nextCharEquals('/')) {
                 this.readComment();

@@ -32,11 +32,11 @@ import java.io.*;
 import java.util.Map;
 
 @Path("/load")
-public class Loader {
+public class LoaderResource {
 
     private final GraphDatabaseService database;
 
-    public Loader(@Context GraphDatabaseService database) {
+    public LoaderResource(@Context GraphDatabaseService database) {
         this.database = database;
     }
 
@@ -46,6 +46,7 @@ public class Loader {
     public Response loadGeoff(Reader reader) {
 
         final GeoffReader geoffReader = new GeoffReader(reader);
+        final NeoLoader neoLoader = new NeoLoader(database);
 
         StreamingOutput stream = new StreamingOutput() {
 
@@ -56,7 +57,7 @@ public class Loader {
                 while (geoffReader.hasMore()) {
                     Subgraph subgraph = geoffReader.readSubgraph();
                     try (Transaction tx = database.beginTx()) {
-                        Map<String, Node> nodes = subgraph.loadInto(database);
+                        Map<String, Node> nodes = neoLoader.load(subgraph);
                         for (Map.Entry<String, Node> entry : nodes.entrySet()) {
                             Node node = entry.getValue();
                             writer.write(Integer.toString(subgraphNumber));

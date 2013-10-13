@@ -24,16 +24,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LocalRelationship {
+public class AbstractRelationship {
 
     private static ObjectMapper mapper = new ObjectMapper();
 
-    private LocalNode startNode;
+    private AbstractNode startNode;
     private String type;
     private HashMap<String, Object> properties;
-    private LocalNode endNode;
+    private AbstractNode endNode;
 
-    public LocalRelationship(LocalNode startNode, String type, Map<String, Object> properties, LocalNode endNode) {
+    public AbstractRelationship(AbstractNode startNode, String type, Map<String, Object> properties, AbstractNode endNode) {
         this.startNode = startNode;
         this.type = type;
         this.mergeProperties(properties);
@@ -62,11 +62,11 @@ public class LocalRelationship {
         return StringUtils.join(parts, "");
     }
 
-    public LocalNode getStartNode() {
+    public AbstractNode getStartNode() {
         return this.startNode;
     }
 
-    public void setStartNode(LocalNode node) {
+    public void setStartNode(AbstractNode node) {
         this.startNode = node;
     }
 
@@ -88,11 +88,11 @@ public class LocalRelationship {
         }
     }
 
-    public LocalNode getEndNode() {
+    public AbstractNode getEndNode() {
         return this.endNode;
     }
 
-    public void setEndNode(LocalNode node) {
+    public void setEndNode(AbstractNode node) {
         this.endNode = node;
     }
 
