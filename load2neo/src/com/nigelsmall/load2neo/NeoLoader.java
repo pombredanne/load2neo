@@ -17,6 +17,8 @@
 package com.nigelsmall.load2neo;
 
 import org.neo4j.graphdb.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +26,8 @@ import java.util.Set;
 
 public class NeoLoader {
 
-    private GraphDatabaseService database;
+    final private Logger logger = LoggerFactory.getLogger(NeoLoader.class);
+    final private GraphDatabaseService database;
 
     public NeoLoader(GraphDatabaseService database) {
         this.database = database;
@@ -37,6 +40,8 @@ public class NeoLoader {
      * @return a Map of named Nodes that have been loaded
      */
     public Map<String, Node> load(Subgraph subgraph) {
+        logger.info("Loading subgraph");
+        long t0 = System.currentTimeMillis();
         HashMap<String, Node> nodes = new HashMap<>();
         HashMap<String, Node> namedNodes = new HashMap<>();
         for (AbstractNode abstractNode : subgraph.getNodes().values()) {
@@ -53,6 +58,8 @@ public class NeoLoader {
             Relationship rel = startNode.createRelationshipTo(endNode, type);
             this.addProperties(rel, abstractRelationship.getProperties());
         }
+        long t1 = System.currentTimeMillis() - t0;
+        logger.info("Loaded " + Integer.toString(nodes.size()) + " nodes in " + Long.toString(t1) + "ms");
         return namedNodes;
     }
 

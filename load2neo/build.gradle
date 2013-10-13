@@ -10,6 +10,7 @@ dependencies {
     compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.7'
     compile group: 'com.sun.jersey', name: 'jersey-core', version: '1.9'
     compile group: 'org.neo4j', name: 'neo4j-kernel', version: '2.0.0-M05'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.6.2'
 }
 
 compileJava {
