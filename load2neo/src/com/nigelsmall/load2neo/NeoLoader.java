@@ -59,7 +59,8 @@ public class NeoLoader {
             this.addProperties(rel, abstractRelationship.getProperties());
         }
         long t1 = System.currentTimeMillis() - t0;
-        logger.info("Loaded " + Integer.toString(nodes.size()) + " nodes in " + Long.toString(t1) + "ms");
+        logger.info(String.format("Loaded %d nodes and %d relationships in %dms",
+                    nodes.size(), subgraph.getRelationships().size(), t1));
         return namedNodes;
     }
 
