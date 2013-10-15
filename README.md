@@ -1,5 +1,7 @@
 # Load2neo
 
+[![Build Status](https://travis-ci.org/nigelsmall/load2neo.png)](https://travis-ci.org/nigelsmall/load2neo)
+
 Load2neo is a server extension written for Neo4j 2.0 and upwards. It provides a
 facility for bulk loading data in the Geoff format and will eventually provide
 XML support too!
