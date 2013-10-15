@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,27 +41,36 @@ public class NeoLoader {
      * @return a Map of named Nodes that have been loaded
      */
     public Map<String, Node> load(Subgraph subgraph) {
-        logger.info("Loading subgraph");
+        // gather entities and stats
+        Map<String, AbstractNode> abstractNodes = subgraph.getNodes();
+        List<AbstractRelationship> abstractRelationships = subgraph.getRelationships();
+        int order = subgraph.order();
+        int size = subgraph.size();
+        HashMap<String, Node> nodes = new HashMap<>(order);
+        HashMap<String, Node> namedNodes = new HashMap<>(order);
+        // start load
+        logger.info(String.format("Loading subgraph with %d nodes and %d relationships...",
+                    order, size));
         long t0 = System.currentTimeMillis();
-        HashMap<String, Node> nodes = new HashMap<>();
-        HashMap<String, Node> namedNodes = new HashMap<>();
-        for (AbstractNode abstractNode : subgraph.getNodes().values()) {
+        // load nodes
+        for (AbstractNode abstractNode : abstractNodes.values()) {
             Node node = this.createOrUpdateNode(abstractNode);
             nodes.put(abstractNode.getName(), node);
             if (abstractNode.isNamed()) {
                 namedNodes.put(abstractNode.getName(), node);
             }
         }
-        for (AbstractRelationship abstractRelationship : subgraph.getRelationships()) {
+        // load relationships
+        for (AbstractRelationship abstractRelationship : abstractRelationships) {
             Node startNode = nodes.get(abstractRelationship.getStartNode().getName());
             Node endNode = nodes.get(abstractRelationship.getEndNode().getName());
             DynamicRelationshipType type = DynamicRelationshipType.withName(abstractRelationship.getType());
             Relationship rel = startNode.createRelationshipTo(endNode, type);
             this.addProperties(rel, abstractRelationship.getProperties());
         }
+        // finish load
         long t1 = System.currentTimeMillis() - t0;
-        logger.info(String.format("Loaded %d nodes and %d relationships in %dms",
-                    nodes.size(), subgraph.getRelationships().size(), t1));
+        logger.info(String.format("Loaded subgraph with %d nodes and %d relationships in %dms", order, size, t1));
         return namedNodes;
     }
 

@@ -31,6 +31,14 @@ public class Subgraph {
         this.relationships = new ArrayList<>();
     }
 
+    public int order() {
+        return this.nodes.size();
+    }
+
+    public int size() {
+        return this.relationships.size();
+    }
+
     public Map<String, AbstractNode> getNodes() {
         return this.nodes;
     }

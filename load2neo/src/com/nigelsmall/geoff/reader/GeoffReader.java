@@ -20,6 +20,8 @@ import com.nigelsmall.load2neo.AbstractNode;
 import com.nigelsmall.load2neo.AbstractRelationship;
 import com.nigelsmall.load2neo.Subgraph;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,12 +30,14 @@ import java.util.*;
 
 public class GeoffReader {
 
-    private static class UnexpectedEndOfData extends IOException {}
+    final private Logger logger = LoggerFactory.getLogger(GeoffReader.class);
 
-    private static ObjectMapper mapper = new ObjectMapper();
+    final private static class UnexpectedEndOfData extends IOException {}
 
-    protected static int NULL = -2;
-    protected static int END_OF_DATA = -1;
+    final private static ObjectMapper mapper = new ObjectMapper();
+
+    final protected static int NULL = -2;
+    final protected static int END_OF_DATA = -1;
 
     private BufferedReader reader;
     private int peeked;
@@ -428,6 +432,8 @@ public class GeoffReader {
     }
 
     public Subgraph readSubgraph() throws IOException {
+        logger.info("Reading subgraph...");
+        long t0 = System.currentTimeMillis();
         Subgraph subgraph = new Subgraph();
         boolean endOfSubgraph = false;
         this.readWhitespace();
@@ -493,6 +499,10 @@ public class GeoffReader {
             }
             this.readWhitespace();
         }
+        // finish read
+        long t1 = System.currentTimeMillis() - t0;
+        logger.info(String.format("Read subgraph with %d nodes and %d relationships in %dms",
+                subgraph.order(), subgraph.size(), t1));
         return subgraph;
     }
 
