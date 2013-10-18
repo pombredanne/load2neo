@@ -84,4 +84,11 @@ public class LoaderResource {
 
     }
 
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/xml")
+    public Response loadXML(Reader reader) {
+        return null;
+    }
+
 }
