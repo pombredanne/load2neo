@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.*;
 
 public class GeoffReader {
@@ -45,6 +46,10 @@ public class GeoffReader {
     public GeoffReader(Reader reader) {
         this.reader = new BufferedReader(reader);
         this.peeked = NULL;
+    }
+
+    public GeoffReader(String string) {
+        this(new StringReader(string));
     }
 
     private Character read() throws IOException {
