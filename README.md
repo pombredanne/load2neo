@@ -23,7 +23,7 @@ loaded.
 ## Usage
 
 ```
-curl -X POST http://localhost:7474/load2neo/load/geoff -d '(alice {"name":"Alice})<-[:KNOWS]->(bob {"name":"Bob"})'
+curl -X POST http://localhost:7474/load2neo/load/geoff -d '(alice)<-[:KNOWS]->(bob)'
 ```
 
 ```
