@@ -495,7 +495,7 @@ public class GeoffReader {
                 AbstractNode node = this.readNode();
                 subgraph.mergeNode(node).setHook(label, key);
             } else  if(this.nextCharEquals('/')) {
-                this.readComment();
+                subgraph.addComment(this.readComment());
             } else if(this.nextCharEquals('~')) {
                 this.readBoundary();
                 endOfSubgraph = true;

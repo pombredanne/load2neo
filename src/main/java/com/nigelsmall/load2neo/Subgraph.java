@@ -22,11 +22,13 @@ import java.util.*;
 
 public class Subgraph {
 
+    private ArrayList<String> comments;
     private HashMap<String, AbstractNode> nodes;
     private ArrayList<AbstractRelationship> relationships;
 
     public Subgraph() {
         super();
+        this.comments = new ArrayList<>();
         this.nodes = new HashMap<>();
         this.relationships = new ArrayList<>();
     }
@@ -37,6 +39,10 @@ public class Subgraph {
 
     public int size() {
         return this.relationships.size();
+    }
+
+    public List<String> getComments() {
+        return this.comments;
     }
 
     public Map<String, AbstractNode> getNodes() {
@@ -56,6 +62,10 @@ public class Subgraph {
             s.add(rel.toString());
         }
         return StringUtils.join(s, "\n");
+    }
+
+    public void addComment(String comment) {
+        this.comments.add(comment);
     }
 
     public AbstractNode mergeNode(AbstractNode node) {
