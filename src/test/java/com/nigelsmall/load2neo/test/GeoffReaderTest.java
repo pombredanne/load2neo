@@ -3,7 +3,7 @@ package com.nigelsmall.load2neo.test;
 import com.nigelsmall.geoff.reader.GeoffReader;
 import com.nigelsmall.load2neo.AbstractNode;
 import com.nigelsmall.load2neo.Subgraph;
-import org.testng.annotations.Test;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
