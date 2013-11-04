@@ -30,8 +30,10 @@ public class DiscoveryResource {
 
     @GET
     @Produces("application/json")
-    public Response getServices(@Context UriInfo info) {
-        return Response.status(Response.Status.OK).entity("{\n    \"geoff-loader\": \"" + info.getAbsolutePath().toString() + "load/geoff\"\n}\n").build();
+    public Response getServiceIndex(@Context UriInfo info) {
+        String absolutePath = info.getAbsolutePath().toString();
+        String index = "{\n    \"geoff_loader\": \"" + absolutePath + "load/geoff\",\n    \"load2neo_version\": \"0.2.0\"\n}\n";
+        return Response.status(Response.Status.OK).entity(index).build();
     }
 
 }
