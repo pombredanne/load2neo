@@ -87,7 +87,7 @@ public class LoaderResource {
     }
 
     @POST
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces("text/x-tab-separated-json")
     @Path("/xml")
     public Response loadXML(Reader reader) {
         return null;
