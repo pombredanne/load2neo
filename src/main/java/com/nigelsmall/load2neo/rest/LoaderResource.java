@@ -43,7 +43,7 @@ public class LoaderResource {
     }
 
     @POST
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces("text/x-tab-separated-json")
     @Path("/geoff")
     public Response loadGeoff(Reader reader) {
 
@@ -60,17 +60,19 @@ public class LoaderResource {
                     Subgraph subgraph = geoffReader.readSubgraph();
                     try (Transaction tx = database.beginTx()) {
                         Map<String, Node> nodes = neoLoader.load(subgraph);
+                        writer.write("{");
+                        String separator = "";
                         for (Map.Entry<String, Node> entry : nodes.entrySet()) {
                             Node node = entry.getValue();
-                            writer.write(Integer.toString(subgraphNumber));
-                            writer.write('\t');
+                            writer.write(separator);
                             writer.write('"');
                             writer.write(entry.getKey());
                             writer.write('"');
-                            writer.write('\t');
+                            writer.write(':');
                             writer.write(Long.toString(node.getId()));
-                            writer.write('\n');
+                            separator = ",";
                         }
+                        writer.write("}\n");
                         writer.flush();
                         tx.success();
                     }
@@ -85,7 +87,7 @@ public class LoaderResource {
     }
 
     @POST
-    @Produces(MediaType.TEXT_PLAIN)
+    @Produces("text/x-tab-separated-json")
     @Path("/xml")
     public Response loadXML(Reader reader) {
         return null;
